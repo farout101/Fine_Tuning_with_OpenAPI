@@ -1,16 +1,50 @@
+from pydantic import BaseModel
 from openai import OpenAI
-from pathlib import Path
-import notebooks.env as env
 
-client = OpenAI(api_key=env.OPENAI_API_KEY)
-response = client.files.create(
-  file=Path('food_suggestion_prompt.jsonl'),
-  purpose='fine-tune'
+client = OpenAI()
+
+from pydantic import BaseModel
+from typing import List
+
+class Dish(BaseModel):
+    name: str
+    calories: float
+    category: str
+    ingredients: List[str]
+    how_to_cook: str
+    meal_time: str
+
+class Meal(BaseModel):
+    main_dish: Dish
+    side_dish: Dish
+
+class ResponseModel(BaseModel):
+    breakfast: Meal
+    lunch: Meal
+    dinner: Meal
+
+class FullResponse(BaseModel):
+    response: ResponseModel
+
+completion = client.beta.chat.completions.parse(
+    model="gpt-4o-2024-08-06",
+    messages=[
+        {"role": "system", "content": """{
+            "weight": 70,
+            "height": 180,
+            "age": 30,
+            "diseases": ["None"],
+            "allergies": ["None"],
+            "gender": "Male",
+            "exercise": "High"
+            }
+            """ },
+        {"role": "user", "content": "..."}
+    ],
+    
+    response_format = FullResponse,
 )
 
-fine_tune_response = client.fine_tuning.jobs.create(
-  training_file=response.id,  # Use the uploaded file's ID
-  model="gpt-4o-mini-2024-07-18"       # Specify the model you want to fine-tune
-)
+research_paper = completion.choices[0].message.parsed
 
-print("Fine-tuning job started with ID:", fine_tune_response.id)
+print(research_paper)
