@@ -1,6 +1,6 @@
 from openai import OpenAI
 from pathlib import Path
-import env
+import notebooks.env as env
 
 client = OpenAI(api_key=env.OPENAI_API_KEY)
 response = client.files.create(
